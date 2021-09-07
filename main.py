@@ -157,5 +157,5 @@ if __name__ == "__main__":
 
     # Initialize the process and join up with the other processes.
     # This is “blocking,” meaning that no process will continue until all processes have joined.
-    main(args)
+    main(0, args)
     # mp.spawn(main, args=(args,), nprocs=args.gpus, join=True)
