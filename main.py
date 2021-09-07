@@ -153,7 +153,7 @@ if __name__ == "__main__":
     # Master address for distributed data parallel
     # os.environ["MASTER_ADDR"] = "127.0.0.1"
     # os.environ["MASTER_PORT"] = "8010"
-    # args.world_size = args.gpus * args.nodes
+    args.world_size = args.gpus * args.nodes
 
     # Initialize the process and join up with the other processes.
     # This is “blocking,” meaning that no process will continue until all processes have joined.
