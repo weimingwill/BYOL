@@ -1,7 +1,6 @@
 import os
 import argparse
 import torch
-from torch.utils.tensorboard import SummaryWriter
 from torchvision import models, datasets
 import numpy as np
 from collections import defaultdict
