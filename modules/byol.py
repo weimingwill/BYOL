@@ -221,20 +221,20 @@ class BYOL(nn.Module):
         online_pred_one = self.online_predictor(online_proj_one)
         online_pred_two = self.online_predictor(online_proj_two)
 
-        # with torch.no_grad():
-        #     target_encoder = self._get_target_encoder()
-        #     target_proj_one = target_encoder(image_one)
-        #     target_proj_two = target_encoder(image_two)
+        with torch.no_grad():
+            target_encoder = self._get_target_encoder()
+            target_proj_one = target_encoder(image_one)
+            target_proj_two = target_encoder(image_two)
 
-        # loss_one = loss_fn(online_pred_one, target_proj_two.detach())
-        # loss_two = loss_fn(online_pred_two, target_proj_one.detach())
+        loss_one = loss_fn(online_pred_one, target_proj_two.detach())
+        loss_two = loss_fn(online_pred_two, target_proj_one.detach())
 
-        target_encoder = self._get_target_encoder()
-        target_proj_one = target_encoder(image_one)
-        target_proj_two = target_encoder(image_two)
+        # target_encoder = self._get_target_encoder()
+        # target_proj_one = target_encoder(image_one)
+        # target_proj_two = target_encoder(image_two)
 
-        loss_one = loss_fn(online_pred_one, target_proj_two)
-        loss_two = loss_fn(online_pred_two, target_proj_one)
+        # loss_one = loss_fn(online_pred_one, target_proj_two)
+        # loss_two = loss_fn(online_pred_two, target_proj_one)
 
         loss = loss_one + loss_two
         return loss.mean()
