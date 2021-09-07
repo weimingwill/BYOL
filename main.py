@@ -19,12 +19,9 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def main(gpu, args):
-    rank = args.nr * args.gpus + gpu
-    dist.init_process_group("nccl", rank=rank, world_size=args.world_size)
-
+def main(args):
+    device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(0)
-    torch.cuda.set_device(gpu)
 
     # dataset
     train_dataset = datasets.CIFAR10(
@@ -33,17 +30,11 @@ def main(gpu, args):
         transform=TransformsSimCLR(size=args.image_size), # paper 224
     )
 
-    train_sampler = torch.utils.data.distributed.DistributedSampler(
-        train_dataset, num_replicas=args.world_size, rank=rank
-    )
-
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
         drop_last=True,
         num_workers=args.num_workers,
-        pin_memory=True,
-        sampler=train_sampler,
     )
 
     # model
@@ -55,58 +46,41 @@ def main(gpu, args):
         raise NotImplementedError("ResNet not implemented")
 
     model = BYOL(resnet, image_size=args.image_size, hidden_layer="avgpool")
-    model = model.cuda(gpu)
-
-    # distributed data parallel
-    model = DDP(model, device_ids=[gpu], find_unused_parameters=True)
+    model = model.to(device)
 
     # optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-
-    # TensorBoard writer
-
-    if gpu == 0:
-        writer = SummaryWriter()
 
     # solver
     global_step = 0
     for epoch in range(args.num_epochs):
         metrics = defaultdict(list)
         for step, ((x_i, x_j), _) in enumerate(train_loader):
-            x_i = x_i.cuda(non_blocking=True)
-            x_j = x_j.cuda(non_blocking=True)
+            x_i = x_i.to(device)
+            x_j = x_j.to(device)
 
             loss = model(x_i, x_j)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            model.module.update_moving_average()  # update moving average of target encoder
+            model.update_moving_average()  # update moving average of target encoder
 
-            if step % 1 == 0 and gpu == 0:
+            if step % 1 == 0:
                 print(f"Step [{step}/{len(train_loader)}]:\tLoss: {loss.item()}")
 
-            if gpu == 0:
-                writer.add_scalar("Loss/train_step", loss, global_step)
-                metrics["Loss/train"].append(loss.item())
-                global_step += 1
+            metrics["Loss/train"].append(loss.item())
+            global_step += 1
 
-        if gpu == 0:
-            # write metrics to TensorBoard
-            for k, v in metrics.items():
-                writer.add_scalar(k, np.array(v).mean(), epoch)
+        # write metrics to TensorBoard
+        print(f"Epoch [{epoch}/{args.num_epochs}]: " + "\t".join([f"{k}: {np.array(v).mean()}" for k, v in metrics.items()]))
 
-            if epoch % args.checkpoint_epochs == 0:
-                if gpu == 0:
-                    print(f"Saving model at epoch {epoch}")
-                    torch.save(resnet.state_dict(), f"./model-{epoch}.pt")
+        if epoch % args.checkpoint_epochs == 0:
+            print(f"Saving model at epoch {epoch}")
+            torch.save(resnet.state_dict(), f"./model-{epoch}.pt")
 
-                # let other workers wait until model is finished
-                # dist.barrier()
 
     # save your improved network
-    if gpu == 0:
-        torch.save(resnet.state_dict(), "./model-final.pt")
-
+    torch.save(resnet.state_dict(), "./model-final.pt")
     cleanup()
 
 
@@ -151,11 +125,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Master address for distributed data parallel
-    os.environ["MASTER_ADDR"] = "127.0.0.1"
-    os.environ["MASTER_PORT"] = "8010"
-    args.world_size = args.gpus * args.nodes
+    # os.environ["MASTER_ADDR"] = "127.0.0.1"
+    # os.environ["MASTER_PORT"] = "8010"
+    # args.world_size = args.gpus * args.nodes
 
     # Initialize the process and join up with the other processes.
     # This is “blocking,” meaning that no process will continue until all processes have joined.
-    main(0, args)
+    main(args)
     # mp.spawn(main, args=(args,), nprocs=args.gpus, join=True)
