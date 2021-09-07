@@ -10,4 +10,4 @@ task_id=evaluate_byol
 
 srun -u --partition=innova --job-name=${task_id} \
     -n1 --gres=gpu:1 --ntasks-per-node=1 \
-    python ${project_dir}/evaluate.py --gpus 1 2>&1 | tee log/${task_id}.log &
+    python ${project_dir}/evaluate.py 2>&1 | tee log/${task_id}.log &
