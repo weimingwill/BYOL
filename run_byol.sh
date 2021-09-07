@@ -9,5 +9,5 @@ export PYTHONPATH=$PYTHONPATH:${pwd}
 task_id=byol_test
 
 srun -u --partition=innova --job-name=${task_id} \
-    -n3 --gres=gpu:3 --ntasks-per-node=3 \
-    python ${project_dir}/main.py --gpus 3 2>&1 | tee log/${task_id}.log &
+    -n1 --gres=gpu:1 --ntasks-per-node=1 \
+    python ${project_dir}/main.py --gpus 1 2>&1 | tee log/${task_id}.log &
