@@ -10,13 +10,9 @@ from modules import BYOL
 from modules.transformations import TransformsSimCLR
 
 # distributed training
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel as DDP
-
-
-def cleanup():
-    dist.destroy_process_group()
+# import torch.distributed as dist
+# import torch.multiprocessing as mp
+# from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 def main(args):
@@ -81,7 +77,6 @@ def main(args):
 
     # save your improved network
     torch.save(resnet.state_dict(), "./model-final.pt")
-    cleanup()
 
 
 if __name__ == "__main__":
