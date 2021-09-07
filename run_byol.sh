@@ -2,7 +2,7 @@ mkdir -p log
 now=$(date +"%Y%m%d_%H%M%S")
 
 root_dir=/mnt/lustre/$(whoami)
-project_dir=$root_dir/projects/byol
+project_dir=$root_dir/projects/BYOL
 
 export PYTHONPATH=$PYTHONPATH:${pwd}
 
